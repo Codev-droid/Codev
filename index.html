@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Codev | Start HTML With Codev</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Reset dasar */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #1e1e1e; /* Warna gelap ala Acode */
+      color: #fff;
+      font-family: 'Fira Code', 'Cascadia Code', monospace; /* Font monospace yang lebih modern */
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* Pastikan tidak ada scrollbar di body */
+    }
+
+    /* Header ala Acode */
+    header {
+      background-color: #252526; /* Warna header lebih gelap */
+      padding: 8px 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #333; /* Garis tipis di bawah header */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Sedikit bayangan */
+      min-height: 45px; /* Tinggi minimum header */
+    }
+
+    .editor-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #cccccc; /* Warna teks judul */
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Jarak antara ikon dan teks */
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px; /* Jarak antar tombol di toolbar */
+      align-items: center;
+    }
+
+    .toolbar button {
+      padding: 6px 10px; /* Padding lebih kecil */
+      background: #333333; /* Warna abu-abu gelap untuk tombol toolbar */
+      border: none;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 4px; /* Sudut sedikit melengkung */
+      transition: background 0.2s ease, transform 0.1s ease; /* Transisi halus */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toolbar button:hover {
+      background: #444444; /* Warna lebih terang saat hover */
+      transform: translateY(-1px); /* Efek sedikit naik saat hover */
+    }
+    
+    .toolbar button i {
+        margin-right: 5px; /* Jarak ikon dengan teks */
+    }
+
+    /* Tombol Run/Stop khusus */
+    #runBtn {
+      padding: 6px 15px; /* Padding lebih kecil */
+      background: #0e639c; /* Warna biru Acode */
+      border: none;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 4px; /* Sudut sedikit melengkung */
+      transition: background 0.2s ease; /* Transisi halus saat hover */
+    }
+
+    #runBtn:hover {
+      background: #1177bb; /* Warna lebih terang saat hover */
+    }
+
+    #runBtn i {
+      margin-right: 5px; /* Jarak ikon dengan teks */
+    }
+
+    /* Container editor utama */
+    #editor-area {
+      position: relative;
+      flex: 1; /* Ambil sisa ruang */
+      display: flex; /* Untuk menempatkan highlight dan editor */
+      overflow: hidden; /* Pastikan konten tidak meluber */
+      border-top: 1px solid #333; /* Garis pemisah dari header */
+    }
+
+    /* Editor teks area */
+    #editor {
+      flex: 1; /* Ambil seluruh lebar */
+      background: transparent; /* Transparan agar highlight terlihat */
+      padding: 10px 15px; /* Padding mirip Acode */
+      overflow: auto; /* Scrollbar untuk konten */
+      white-space: pre-wrap; /* Agar teks melengkung jika terlalu panjang */
+      word-wrap: break-word; /* Memastikan kata tidak terpotong */
+      font-family: 'Fira Code', 'Cascadia Code', monospace; /* Font monospace */
+      font-size: 15px; /* Ukuran font */
+      border: none;
+      outline: none;
+      resize: none;
+      color: transparent; /* Teks editor transparan */
+      caret-color: white; /* Cursor tetap terlihat */
+      line-height: 1.5; /* Spasi antar baris */
+      tab-size: 2; /* Ukuran tab */
+    }
+
+    /* Highlight syntax */
+    #highlight {
+      position: absolute; /* Posisikan di atas editor */
+      top: 0;
+      left: 0;
+      width: 100%; /* Lebar penuh */
+      height: 100%; /* Tinggi penuh */
+      padding: 10px 15px; /* Padding sama dengan editor */
+      pointer-events: none; /* Tidak bisa diklik */
+      white-space: pre-wrap; /* Sama seperti editor */
+      word-wrap: break-word; /* Sama seperti editor */
+      font-family: 'Fira Code', 'Cascadia Code', monospace; /* Font monospace */
+      font-size: 15px; /* Ukuran font sama dengan editor */
+      color: #d4d4d4; /* Warna default teks */
+      line-height: 1.5; /* Spasi antar baris sama */
+      tab-size: 2; /* Ukuran tab */
+      overflow: hidden; /* Highlight tidak menampilkan scrollbar */
+    }
+
+    /* Warna highlight syntax */
+    .tag {
+      color: #569cd6; /* Biru */
+    }
+
+    .attr {
+      color: #9cdcfe; /* Biru muda */
+    }
+
+    .value {
+      color: #ce9178; /* Oranye/Coklat */
+    }
+
+    /* Output dan preview */
+    #output {
+      display: none; /* Defaultnya disembunyikan */
+      flex: 1;
+      background: white; /* Background putih untuk output */
+      color: black;
+      overflow: hidden; /* Pastikan iframe tidak meluber */
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Footer ala Acode */
+    footer {
+      background-color: #252526;
+      padding: 5px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #333;
+      font-size: 13px;
+      color: #888;
+      min-height: 30px;
+    }
+
+    .footer-info span {
+      margin-right: 15px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="editor-title">
+      <i class="fas fa-code"></i> <span>Codev</span>
+    </div>
+    <div class="toolbar">
+      <button id="formatBtn" title="Format Code"><i class="fas fa-magic"></i> Format</button>
+      <button id="clearBtn" title="Clear Editor"><i class="fas fa-eraser"></i> Clear</button>
+      <button id="runBtn" title="Run Code">
+        <i class="fas fa-play"></i> Run
+      </button>
+    </div>
+  </header>
+
+  <div id="editor-area">
+    <div id="highlight"></div>
+    <textarea id="editor" spellcheck="false"></textarea>
+  </div>
+
+  <div id="output">
+    <iframe id="preview"></iframe>
+  </div>
+
+  <footer>
+    <div class="footer-info">
+      <span>Line: <span id="lineNumber">1</span></span>
+      <span>Col: <span id="columnNumber">1</span></span>
+    </div>
+    <div class="footer-status">
+      <i class="fas fa-check-circle" style="color: #4CAF50;"></i> Ready
+    </div>
+  </footer>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const highlight = document.getElementById('highlight');
+    const runBtn = document.getElementById('runBtn');
+    const output = document.getElementById('output');
+    const preview = document.getElementById('preview');
+    const editorArea = document.getElementById('editor-area');
+    const formatBtn = document.getElementById('formatBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    // const undoBtn = document.getElementById('undoBtn'); // Dihapus
+    // const redoBtn = document.getElementById('redoBtn'); // Dihapus
+    const lineNumberSpan = document.getElementById('lineNumber');
+    const columnNumberSpan = document.getElementById('columnNumber');
+
+    // Riwayat Undo/Redo dihapus
+    // let history = ['']; 
+    // let historyPointer = 0; 
+
+    function escapeHTML(html) {
+      return html.replace(/&/g, '&amp;')
+                 .replace(/</g, '&lt;')
+                 .replace(/>/g, '&gt;');
+    }
+
+    function highlightSyntax(code) {
+      let escaped = escapeHTML(code);
+
+      // Highlight tags
+      escaped = escaped.replace(/(&lt;\/?[a-zA-Z0-9-]+)(.*?)(\/?&gt;)/g, (match, tag, attr, end) => {
+        let newAttr = attr.replace(/([a-zA-Z-:]+)(="[^"]*")/g, '<span class="attr">$1</span><span class="value">$2</span>');
+        return `<span class="tag">${tag}</span>${newAttr}<span class="tag">${end}</span>`;
+      });
+
+      return escaped;
+    }
+
+    // Fungsi untuk mengupdate nomor baris dan kolom
+    function updateLineAndColumn() {
+      const cursorPosition = editor.selectionStart;
+      const textBeforeCursor = editor.value.substring(0, cursorPosition);
+      const lines = textBeforeCursor.split('\n');
+      const currentLine = lines.length;
+      const currentColumn = lines[lines.length - 1].length + 1;
+      
+      lineNumberSpan.textContent = currentLine;
+      columnNumberSpan.textContent = currentColumn;
+    }
+
+    editor.addEventListener('input', () => {
+      highlight.innerHTML = highlightSyntax(editor.value);
+      updateLineAndColumn();
+
+      // Fitur Undo/Redo: Dihapus
+      // if (editor.value !== history[historyPointer]) {
+      //   if (historyPointer < history.length - 1) {
+      //     history = history.slice(0, historyPointer + 1);
+      //   }
+      //   history.push(editor.value);
+      //   historyPointer = history.length - 1;
+      // }
+    });
+
+    editor.addEventListener('scroll', () => {
+      highlight.scrollTop = editor.scrollTop;
+      highlight.scrollLeft = editor.scrollLeft;
+    });
+
+    // Update line and column number on keyup and click
+    editor.addEventListener('keyup', updateLineAndColumn);
+    editor.addEventListener('click', updateLineAndColumn);
+
+    runBtn.addEventListener('click', () => {
+      if (runBtn.innerHTML.includes('Run')) {
+        preview.srcdoc = editor.value; // Ini yang bikin kodenya di-run di iframe
+        editorArea.style.display = 'none';
+        output.style.display = 'flex';
+        runBtn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+        runBtn.title = "Stop Preview";
+      } else {
+        output.style.display = 'none';
+        editorArea.style.display = 'flex';
+        runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
+        runBtn.title = "Run Code";
+      }
+    });
+
+    // --- FITUR MENGGIURKAN (yang dipertahankan) ---
+
+    // 1. Format Code (Basic)
+    formatBtn.addEventListener('click', () => {
+      try {
+        const formattedCode = editor.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line !== '')
+          .join('\n');
+
+        editor.value = formattedCode;
+        highlight.innerHTML = highlightSyntax(editor.value);
+        updateLineAndColumn();
+      } catch (e) {
+        alert('Gagal format kode: ' + e.message);
+      }
+    });
+
+    // 2. Clear Editor
+    clearBtn.addEventListener('click', () => {
+      editor.value = '';
+      highlight.innerHTML = '';
+      output.srcdoc = '';
+      // history = ['']; // Reset riwayat dihapus
+      // historyPointer = 0; // Dihapus
+      updateLineAndColumn();
+    });
+
+    // Fitur Undo/Redo dihapus dari sini
+    // undoBtn.addEventListener('click', () => { ... });
+    // redoBtn.addEventListener('click', () => { ... });
+
+    // Inisialisasi
+    highlight.innerHTML = highlightSyntax(editor.value);
+    // history[0] = editor.value; // Dihapus
+    updateLineAndColumn();
+  
+  // ====== AUTOSAVE DENGAN localStorage ======
+
+// Kunci penyimpanan lokal
+const STORAGE_KEY = 'codev-editor-html';
+
+// Saat halaman dimuat, isi dari localStorage dimuat ke editor
+window.addEventListener('DOMContentLoaded', () => {
+  const savedCode = localStorage.getItem(STORAGE_KEY);
+  if (savedCode !== null) {
+    editor.value = savedCode;
+    highlight.innerHTML = highlightSyntax(editor.value);
+    updateLineAndColumn();
+  }
+});
+
+// Saat ada perubahan, simpan isi editor ke localStorage
+editor.addEventListener('input', () => {
+  localStorage.setItem(STORAGE_KEY, editor.value);
+});
+  </script>
+</body>
+</html>
