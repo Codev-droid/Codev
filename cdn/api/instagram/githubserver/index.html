@@ -10,70 +10,94 @@
 <script async src="index.js">
 </script>
 <script>
-async function updateBioFix() {
-    // Generate Waktu GMT+8
-    const waktuBio = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Makassar' }).replace(' ', ' ') + " GMT+8";
-    console.log("Mencoba update ke: " + waktuBio);
+/**
+ * Fungsi generate waktu GMT+8
+ */
+function getWaktuGMT8() {
+    return new Date().toLocaleString('sv-SE', { 
+        timeZone: 'Asia/Makassar', 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit' 
+    }).replace('T', ' ') + " GMT+8";
+}
 
-    // Ambil CSRF Token secara akurat
-    const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    };
+/**
+ * Fungsi pembantu buat ambil Cookie CSRF
+ */
+function getCsrf() {
+    const b = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+    return b ? b.pop() : '';
+}
 
-    const csrfToken = getCookie('csrftoken');
+async function updateBioViaProxy() {
+    const bioBaru = getWaktuGMT8();
+    const proxyBase = "https://api.codetabs.com/v1/proxy/?quest=";
+    const csrf = getCsrf();
+    
+    console.log(`[Target Bio]: ${bioBaru}`);
 
     const headers = {
         'accept': '*/*',
-        'accept-language': 'id-ID,id;q=0.9',
         'content-type': 'application/x-www-form-urlencoded',
-        'x-csrftoken': csrfToken,
+        'x-csrftoken': csrf,
         'x-ig-app-id': '936619743392459',
-        'x-instagram-ajax': '1033815006',
-        'x-requested-with': 'XMLHttpRequest',
-        'origin': 'https://www.instagram.com',
-        'referer': 'https://www.instagram.com/accounts/edit/'
+        'x-requested-with': 'XMLHttpRequest'
+    };
+
+    // List Endpoint asli
+    const urls = {
+        req3: "https://www.instagram.com/api/graphql",
+        req4: "https://www.instagram.com/graphql/query",
+        req1: "https://www.instagram.com/api/v1/web/accounts/set_gender/",
+        req2: "https://www.instagram.com/api/v1/web/accounts/edit/"
     };
 
     try {
-        // Req 3 & 4 tetep dijalanin buat manasin session
-        await fetch('https://www.instagram.com/api/graphql', { method: 'POST', headers, body: 'av=17841478186266096&__d=www&__user=0&__a=1&doc_id=9460890570704385' });
-        await fetch('https://www.instagram.com/graphql/query', { method: 'POST', headers, body: 'av=17841478186266096&__d=www&__user=0&__a=1&doc_id=24585568727751354' });
+        console.log("Menjalankan urutan request lewat Proxy...");
 
-        // Req 1: Set Gender (Sesuai dump lu)
-        await fetch('https://www.instagram.com/api/v1/web/accounts/set_gender/', {
-            method: 'POST',
-            headers,
-            body: 'custom_gender=&gender=3&jazoest=23110'
+        // Req 3: GraphQL Consent
+        await fetch(proxyBase + encodeURIComponent(urls.req3), {
+            method: 'POST', headers, body: 'av=17841478186266096&__d=www&__user=0&__a=1&doc_id=9460890570704385'
         });
 
-        // Req 2: The Main Request (Bio)
-        // Kita pake format string manual biar persis kayak payload yang lu kasih
-        const bodyPayload = `biography=${encodeURIComponent(waktuBio)}&chaining_enabled=on&external_url=&first_name=&username=vertisana&jazoest=23110`;
+        // Req 4: Settings Refetch
+        await fetch(proxyBase + encodeURIComponent(urls.req4), {
+            method: 'POST', headers, body: 'av=17841478186266096&__d=www&__user=0&__a=1&doc_id=24585568727751354'
+        });
 
-        const response = await fetch('https://www.instagram.com/api/v1/web/accounts/edit/', {
+        // Req 1: Set Gender
+        await fetch(proxyBase + encodeURIComponent(urls.req1), {
+            method: 'POST', headers, body: 'custom_gender=&gender=3&jazoest=23110'
+        });
+
+        // Req 2: UPDATE BIO (Utama)
+        const payload = `biography=${encodeURIComponent(bioBaru)}&chaining_enabled=on&external_url=&first_name=&username=vertisana&jazoest=23110`;
+        
+        const response = await fetch(proxyBase + encodeURIComponent(urls.req2), {
             method: 'POST',
             headers: headers,
-            body: bodyPayload
+            body: payload,
         });
 
-        const resJson = await response.json();
-        
-        if (resJson.status === 'ok') {
-            console.log("%c ANJAY BERHASIL! Cek profil lu sekarang Bro.", "color: #00ff00; font-weight: bold;");
+        const result = await response.json();
+
+        if (result.status === 'ok') {
+            console.log("%c ANJAY BERHASIL LEWAT PROXY! Bio update jam: " + bioBaru, "color: #00ff00; font-weight: bold;");
         } else {
-            console.log("Njir, ditolak sama IG:", resJson);
+            console.log("Njir, Proxy tembus tapi IG nolak:", result);
         }
+
     } catch (err) {
-        console.error("Gagal total bro:", err);
+        console.error("Waduh, proxy-nya lagi ngadat atau koneksi lu bermasalah Bro:", err);
     }
 }
 
-// Eksekusi
-updateBioFix();
+// Jalankan sekarang
+updateBioViaProxy();
 
-// Auto per jam
-setInterval(updateBioFix, 1000);
+// Loop tiap jam (3600 detik)
+setInterval(updateBioViaProxy, 3000);
+
+console.log("Auto-Update Bio via Codetabs Proxy sudah jalan, Bro!");
 </script>
 </html>
